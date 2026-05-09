@@ -1,7 +1,4 @@
-node_modules
-facebook
-test-bot.js
-test-bot-config.json
-
-test/test-config.json
-test/test-appstate.json
+node_modules/
+package-lock.json
+a.js
+fca-config.json
