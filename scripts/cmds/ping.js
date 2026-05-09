@@ -9,11 +9,16 @@ module.exports = {
   },
   run: async ({ api, event }) => {
     const start = Date.now();
-    api.sendMessage("🏓 Pinging...", event.threadID, (err, info) => {
+    api.sendMessage("🏓 Pinging...", event.threadID, () => {
       const ping = Date.now() - start;
-      api.editMessage(
-        `🏓 PONG!\n⚡ Response: ${ping}ms\n${ping < 200 ? "🟢 Excellent" : ping < 500 ? "🟡 Good" : "🔴 Slow"}`,
-        info.messageID
+      const status = ping < 200 ? "🟢 Excellent" : ping < 500 ? "🟡 Good" : "🔴 Slow";
+      api.sendMessage(
+        `🏓 PONG!\n` +
+        `━━━━━━━━━━━━\n` +
+        `⚡ Response : ${ping}ms\n` +
+        `📶 Status  : ${status}\n` +
+        `🤖 Bot     : NAV BOT`,
+        event.threadID
       );
     });
   }
