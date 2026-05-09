@@ -1,64 +1,41 @@
-const words = ["programming","javascript","facebook","messenger","computer","database","terminal","keyboard","network","browser","password","internet","function","variable","algorithm"];
-const stages = ["😵","😨","😰","😟","😣","😬","🙂","😀"];
-const active = {};
-
 module.exports = {
   config: {
     name: "hangman",
-    aliases: ["hm", "guess"],
-    description: "Play hangman and win coins",
-    usage: "hangman [amount] | hangman <letter>",
-    cooldown: 4,
-    category: "games"
+    aliases: ["hm", "wordguess"],
+    version: "1.0",
+    author: "CowBot",
+    countDown: 3,
+    role: 0,
+    shortDescription: "Play Hangman",
+    description: { en: "Play hangman — guess the hidden word letter by letter" },
+    category: "game",
+    guide: { en: "{pn}hangman [letter] or new" }
   },
-  run: async ({ api, event, args, db, config }) => {
+  onStart: async function ({ message, args, event, threadsData }) {
+    const tid = event.threadID;
     const uid = event.senderID;
-    const user = db.getUser(uid);
-    if (!user.registered) return api.sendMessage(`❌ Register first! ${config.prefix}register <name>`, event.threadID);
-
-    if (active[uid] && args[0] && args[0].length === 1 && /[a-z]/i.test(args[0])) {
-      const g = active[uid];
-      const letter = args[0].toLowerCase();
-      if (g.guessed.includes(letter)) return api.sendMessage(`❌ Already guessed "${letter}"!`, event.threadID);
-      g.guessed.push(letter);
-      const correct = g.word.includes(letter);
-      if (!correct) g.wrong++;
-      const display = g.word.split("").map(c => g.guessed.includes(c) ? c : "_").join(" ");
-      const won = !display.includes("_");
-      const lost = g.wrong >= 6;
-
-      if (won) {
-        db.updateBalance(uid, g.reward); db.addExp(uid, 20);
-        db.updateUser(uid, { wins: user.wins + 1, games_played: user.games_played + 1 });
-        delete active[uid];
-        return api.sendMessage(`🎉 YOU WON! Word: "${g.word}"\n+${config.currency}${g.reward}\n💰 ${db.getBalance(uid).balance}`, event.threadID);
-      }
-      if (lost) {
-        db.updateBalance(uid, -g.reward);
-        db.updateUser(uid, { losses: user.losses + 1, games_played: user.games_played + 1 });
-        delete active[uid];
-        return api.sendMessage(`💀 GAME OVER! Word was: "${g.word}"\n-${config.currency}${g.reward}\n💰 ${db.getBalance(uid).balance}`, event.threadID);
-      }
-      return api.sendMessage(
-        `${stages[6 - g.wrong]} HANGMAN\n${display}\n❌ Wrong: ${g.wrong}/6\n🔡 Guessed: ${g.guessed.join(", ")}\nType ${config.prefix}hangman <letter>`,
-        event.threadID
-      );
+    const words = ["javascript","facebook","messenger","cowbot","elephant","keyboard","programming","database","beautiful","challenge","adventure","chocolate","butterfly","universe","mountain"];
+    const stages = ["😐","😟","😧","😨","😱","💀"];
+    let state;
+    try { state = (await threadsData.get(tid, "data"))?.hm?.[uid]; } catch(e) {}
+    const action = (args[0] || "new").toLowerCase();
+    if (action === "new" || !state) {
+      const word = words[Math.floor(Math.random() * words.length)];
+      state = { word, guessed: [], wrong: 0 };
+      try { const d = await threadsData.get(tid, "data") || {}; if(!d.hm) d.hm = {}; d.hm[uid] = state; await threadsData.set(tid, { data: d }); } catch(e) {}
+      const display = word.split("").map(c => "_").join(" ");
+      return message.reply(`💀 HANGMAN\n━━━━━━━━━━━\n${stages[0]} Word: ${display}\nLength: ${word.length} letters\n\nGuess with !hangman <letter>`);
     }
-
-    if (active[uid]) return api.sendMessage(`🎮 Active game!\n${active[uid].word.split("").map(c => active[uid].guessed.includes(c) ? c : "_").join(" ")}\nGuess: ${config.prefix}hangman <letter>`, event.threadID);
-
-    const amount = parseInt(args[0]) || 100;
-    const eco = db.getBalance(uid);
-    if (eco.balance < amount) return api.sendMessage(`❌ Not enough coins!`, event.threadID);
-    if (amount > 2000) return api.sendMessage("❌ Max 2,000!", event.threadID);
-
-    const word = words[Math.floor(Math.random() * words.length)];
-    active[uid] = { word, guessed: [], wrong: 0, reward: amount };
-    const display = word.split("").map(() => "_").join(" ");
-
-    api.sendMessage(
-      `🎮 HANGMAN STARTED!\n${"━".repeat(20)}\nWord: ${display}\nLength: ${word.length} letters\n💰 Bet: ${config.currency}${amount}\n\nType ${config.prefix}hangman <letter> to guess!`,
-      event.threadID
-    );
+    if (action.length !== 1 || !/[a-z]/.test(action)) return message.reply("Guess one letter at a time! e.g. !hangman a");
+    if (state.guessed.includes(action)) return message.reply("You already guessed '" + action + "'!");
+    state.guessed.push(action);
+    if (!state.word.includes(action)) state.wrong++;
+    const display = state.word.split("").map(c => state.guessed.includes(c) ? c : "_").join(" ");
+    const won = !display.includes("_");
+    const lost = state.wrong >= 5;
+    try { const d = await threadsData.get(tid, "data") || {}; if(!d.hm) d.hm = {}; if(won||lost) delete d.hm[uid]; else d.hm[uid] = state; await threadsData.set(tid, { data: d }); } catch(e) {}
+    if (won) return message.reply(`💀 HANGMAN\n━━━━━━━━━━━\n🎉 YOU WIN!\nWord: ${state.word}\nGuessed: ${state.guessed.join(", ")}`);
+    if (lost) return message.reply(`💀 HANGMAN\n━━━━━━━━━━━\n${stages[5]} GAME OVER!\nThe word was: ${state.word}`);
+    message.reply(`💀 HANGMAN\n━━━━━━━━━━━\n${stages[state.wrong]} Word: ${display}\nWrong: ${state.wrong}/5\nGuessed: ${state.guessed.join(", ")}\n\nGuess: !hangman <letter>`);
   }
 };
