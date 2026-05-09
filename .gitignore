@@ -1,0 +1,10 @@
+node_modules/
+*.db
+*.db-shm
+*.db-wal
+.env
+*.log
+.DS_Store
+Thumbs.db
+
+# Keep appstate.json tracked (needed for bot login)
