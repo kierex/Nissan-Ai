@@ -1,658 +1,746 @@
-/**
- * @copyright artemegion
- */
+﻿declare module '@dongdev/fca-unofficial' {
+  import type EventEmitter from "events";
+  import type { Duplex, Readable, Transform } from "stream";
 
-declare namespace Facebook
-{
-    interface ICredentials
-    {
-        email: string;
-        password: string;
+  // ============================================================================
+  // Type Definitions
+  // ============================================================================
+
+  type ReadableStream = Readable | Duplex | Transform;
+
+  // ============================================================================
+  // Login Function
+  // ============================================================================
+
+  function login(
+    credentials: Partial<{
+      email: string;
+      password: string;
+      appState: AppstateData;
+      Cookie?: string | string[] | Record<string, string>;
+    }>,
+    options: Partial<IFCAU_Options>,
+    callback: (err: Error | null, api: IFCAU_API) => void
+  ): void;
+  function login(
+    credentials: Partial<{
+      email: string;
+      password: string;
+      appState: AppstateData;
+      Cookie?: string | string[] | Record<string, string>;
+    }>,
+    options: Partial<IFCAU_Options>
+  ): Promise<IFCAU_API>;
+  function login(
+    credentials: Partial<{
+      email: string;
+      password: string;
+      appState: AppstateData;
+      Cookie?: string | string[] | Record<string, string>;
+    }>,
+    callback: (err: Error | null, api: IFCAU_API) => void
+  ): void;
+  function login(
+    credentials: Partial<{
+      email: string;
+      password: string;
+      appState: AppstateData;
+      Cookie?: string | string[] | Record<string, string>;
+    }>
+  ): Promise<IFCAU_API>;
+
+  export default login;
+  export { login };
+
+  // ============================================================================
+  // Core Types
+  // ============================================================================
+
+  export type Cookie = {
+    key: string;
+    value: string;
+    domain: string;
+    path?: string;
+    hostOnly?: boolean;
+    creation?: string;
+    lastAccessed?: string;
+  };
+
+  export type AppstateData = {
+    appState: Cookie[];
+  };
+
+  export type MessageObject = {
+    body: string;
+    sticker?: string;
+    attachment?: ReadableStream | ReadableStream[];
+    url?: string;
+    emoji?: string;
+    emojiSize?: string;
+    mentions?: {
+      tag: string;
+      id: string;
+      fromIndex?: number;
+    }[];
+    location?: {
+      latitude: number;
+      longitude: number;
+      current?: boolean;
+    };
+  };
+
+  // ============================================================================
+  // Send Message Function
+  // ============================================================================
+
+  function sendMessage(
+    message: string | MessageObject,
+    threadID: string | string[],
+    callback?: (err?: Error, data?: { threadID: string; messageID: string; timestamp: number }) => void,
+    replyMessageID?: string,
+    isGroup?: boolean
+  ): Promise<{ threadID: string; messageID: string; timestamp: number }>;
+  function sendMessage(
+    message: string | MessageObject,
+    threadID: string | string[],
+    replyMessageID?: string,
+    isGroup?: boolean
+  ): Promise<{ threadID: string; messageID: string; timestamp: number }>;
+
+  // ============================================================================
+  // API Interface
+  // ============================================================================
+
+  export type IFCAU_API = {
+    // Group Management
+    addUserToGroup: (userID: string, threadID: string, callback?: (err?: Error) => void) => Promise<void>;
+    removeUserFromGroup: (userID: string, threadID: string, callback?: (err?: Error) => void) => Promise<void>;
+    createNewGroup: (participantIDs: string[], groupTitle?: string, callback?: (err: Error, threadID: string) => void) => Promise<string>;
+
+    // Admin & Permissions
+    changeAdminStatus: (threadID: string, adminIDs: string | string[], adminStatus: boolean, callback?: (err?: Error) => void) => Promise<void>;
+    changeApprovalMode: (approvalMode: 0 | 1, threadID: string, callback?: (err?: Error) => void) => Promise<void>;
+
+    // Thread Management
+    changeArchivedStatus: (threadOrThreads: string | string[], archive: boolean, callback?: (err?: Error) => void) => Promise<void>;
+    changeBlockedStatus: (userID: string, blocked: boolean, callback?: (err?: Error) => void) => Promise<void>;
+    changeGroupImage: (image: ReadableStream, threadID: string, callback?: (err?: Error) => void) => Promise<void>;
+    changeNickname: (nickname: string, threadID: string, participantID: string, callback?: (err?: Error) => void) => Promise<void>;
+    changeThreadColor: (color: string, threadID: string, callback?: (err?: Error) => void) => Promise<void>;
+    changeThreadEmoji: (emoji: string | null, threadID: string, callback?: (err?: Error) => void) => Promise<void>;
+    setTitle: (newTitle: string, threadID: string, callback?: (err?: Error) => void) => Promise<void>;
+    deleteThread: (threadOrThreads: string | string[], callback?: (err?: Error) => void) => Promise<void>;
+    muteThread: (threadID: string, muteSeconds: number, callback?: (err?: Error) => void) => Promise<void>;
+
+    // Messages
+    sendMessage: typeof sendMessage;
+    editMessage: (text: string, messageID: string, callback?: (err?: Error) => void) => Promise<void>;
+    deleteMessage: (messageOrMessages: string | string[], callback?: (err?: Error) => void) => Promise<void>;
+    unsendMessage: (messageID: string, callback?: (err?: Error) => void) => Promise<void>;
+    unsendMessageMqtt: (messageID: string, threadID: string, callback?: (err?: Error) => void) => Promise<void>;
+    forwardMessage: (messageID: string, threadID: string, callback?: (err?: Error) => void) => Promise<void>;
+    forwardAttachment: (attachmentID: string, userOrUsers: string | string[], callback?: (err?: Error) => void) => Promise<void>;
+    pinMessage: (pinMode: boolean, messageID: string, threadID: string, callback?: (err?: Error) => void) => Promise<void>;
+
+    // Reactions & Interactions
+    setMessageReaction: (reaction: string, messageID: string, callback?: (err?: Error) => void, forceCustomReaction?: boolean) => Promise<void>;
+    setMessageReactionMqtt: (reaction: string, messageID: string, threadID: string, callback?: (err?: Error) => void) => Promise<void>;
+    sendTypingIndicator: (threadID: string, callback?: (err?: Error) => void) => Promise<void>;
+    sendTypingIndicatorMqtt: (isTyping: boolean, threadID: string, callback?: (err?: Error) => void) => Promise<void>;
+
+    // Polls
+    createPoll: (title: string, threadID: string, options?: { [item: string]: boolean }, callback?: (err?: Error) => void) => Promise<void>;
+
+    // Read & Delivery Status
+    markAsRead: (threadID: string, read?: boolean, callback?: (err?: Error) => void) => Promise<void>;
+    markAsReadAll: (callback?: (err?: Error) => void) => Promise<void>;
+    markAsDelivered: (threadID: string, messageID: string, callback?: (err?: Error) => void) => Promise<void>;
+    markAsSeen: (seenTimestamp?: number, callback?: (err?: Error) => void) => Promise<void>;
+
+    // Thread Information
+    getThreadInfo: (threadID: string, callback?: (err: Error | null, thread: IFCAU_Thread) => void) => Promise<IFCAU_Thread>;
+    getThreadList: (limit: number, timestamp: number | null, tags: string[], callback?: (err: Error | null, threads: IFCAU_ThreadList) => void) => Promise<IFCAU_ThreadList>;
+    getThreadHistory: (threadID: string, amount: number, time?: number, callback?: (err: Error | null, messages: any[]) => void) => Promise<any[]>;
+    getThreadPictures: (threadID: string, offset: number, limit: number, callback?: (err: Error | null, pictures: string[]) => void) => Promise<string[]>;
+
+    // User Information
+    getUserInfo: (userOrUsers: string | string[], callback?: (err: Error | null, users: { [id: string]: IFCAU_User }) => void) => Promise<{ [id: string]: IFCAU_User }>;
+    getUserID: (name: string, callback?: (err: Error | null, obj: IFCAU_UserIDResponse) => void) => Promise<IFCAU_UserIDResponse>;
+    getFriendsList: (callback?: (err: Error | null, friends: IFCAU_Friend[]) => void) => Promise<IFCAU_Friend[]>;
+    getCurrentUserID: () => string;
+
+    // Utilities
+    getAppState: () => any;
+    getEmojiUrl: (c: string, size: number, pixelRatio: number) => string;
+    resolvePhotoUrl: (photoID: string, callback?: (err: Error | null, url: string) => void) => Promise<string>;
+    threadColors: {
+      [color: string]: string;
+    };
+
+    // Message Requests
+    handleMessageRequest: (threadOrThreads: string | string[], accept: boolean, callback?: (err?: Error) => void) => Promise<void>;
+
+    // Event Listeners
+    listen: (callback?: (err: Error | null, message: IFCAU_ListenMessage) => void) => EventEmitter;
+    listenMqtt: (callback?: (err: Error | null, message: IFCAU_ListenMessage) => void) => EventEmitter & { stopListening: (callback?: () => void) => void };
+
+    // Middleware System
+    useMiddleware: (middleware: IFCAU_Middleware | string, fn?: IFCAU_Middleware) => () => void;
+    removeMiddleware: (identifier: string | IFCAU_Middleware) => boolean;
+    clearMiddleware: () => void;
+    listMiddleware: () => string[];
+    setMiddlewareEnabled: (name: string, enabled: boolean) => boolean;
+    readonly middlewareCount: number;
+
+    // Configuration & Session
+    setOptions: (options: Partial<IFCAU_Options>) => void;
+    logout: (callback?: (err?: Error) => void) => Promise<void>;
+
+    // Message Scheduler
+    scheduler: {
+      scheduleMessage: (message: string | MessageObject, threadID: string | string[], when: Date | number | string, options?: { replyMessageID?: string; isGroup?: boolean; callback?: (err?: Error) => void }) => string;
+      cancelScheduledMessage: (id: string) => boolean;
+      getScheduledMessage: (id: string) => IFCAU_ScheduledMessage | null;
+      listScheduledMessages: () => IFCAU_ScheduledMessage[];
+      cancelAllScheduledMessages: () => number;
+      getScheduledCount: () => number;
+      cleanup: () => void;
+    };
+
+    // Auto-save AppState
+    enableAutoSaveAppState: (options?: { filePath?: string; interval?: number; saveOnLogin?: boolean }) => () => void;
+  };
+
+  // ============================================================================
+  // Listen Message Types
+  // ============================================================================
+
+  export type IFCAU_ListenMessage =
+    | {
+      type: "message";
+      attachments: IFCAU_Attachment[];
+      args: string[];
+      body: string;
+      isGroup: boolean;
+      mentions: { [id: string]: string };
+      messageID: string;
+      senderID: string;
+      threadID: string;
+      isUnread: boolean;
+      participantIDs: string[];
     }
-
-    interface IAppStateCredentials
-    {
-        appState: any;
-    }
-
-    interface IOptions
-    {
-        logLevel?: 'silly' | 'verbose' | 'info' | 'http' | 'warn' | 'error' | 'silent';
-
-        selfListen?: boolean;
-        listenEvents?: boolean;
-        updatePresence?: boolean;
-
-        forceLogin?: boolean;
-
-        pageID?: string;
-        userAgent?: string;
-    }
-
-    interface IError
-    {
-        error: string;
-    }
-
-    interface ILoginError extends IError
-    {
-        continue?: (code: string | number) => void;
-    }
-
-    interface IUser
-    {
-        userID: string;
-
-        fullName: string;
-        firstName: string;
-
-        alternateName: string;
-        vanity: string;
-
-        gender: string;
-
-        isBirthday: boolean;
-        isFriend: boolean;
-
-        profilePicture: string;
-        profileUrl: string;
-
-        type: string;
-    }
-
-    interface IUserInfo
-    {
-        name: string;
-        firstName: string;
-
-        alternateName: string;
-        vanity: string;
-
-        thumbSrc: string;
-        profileUrl: string;
-
-        gender: string;
-        type: string;
-
-        isFriend: boolean;
-        isBirthday: boolean;
-
-        searchTokens?: string[];
-    }
-
-    interface IMessage
-    {
-        body: string;
-    }
-
-    interface IStickerMessage extends IMessage
-    {
-        sticker: string;
-    }
-
-    interface IAttachmentMessage extends IMessage
-    {
-        attachment: ReadableStream | ReadableStream[];
-    }
-
-    interface IUrlMessage extends IMessage
-    {
-        url: string;
-    }
-
-    interface IEmojiMessage extends IMessage
-    {
-        emoji: string;
-        emojiSize: 'small' | 'medium' | 'large';
-    }
-
-    interface IMentionsMessage extends IMessage
-    {
-        mentions: IMention[];
-    }
-
-    interface IMention
-    {
-        id: string;
-        tag: string;
-        fromIndex?: number;
-    }
-
-    interface IMessageInfo
-    {
-        threadID: string;
-        messageID: string;
-
-        timestamp: number;
-    }
-
-    interface IThreadInfo
-    {
-        threadID: string;
-        participantIDs: Array<string>;
-        formerParticipants: Array<string>;
-        name: string;
-        nicknames?: Array<string>;
-        snippet: string;
-        snippetHasAttachment: boolean;
-        snippetAttachments: Array<IAttachment>;
-        snippedSender: string;
-        unreadCount: number;
-        messageCount: number;
-        imageSrc?: string;
-        timestamp: number;
-        serverTimestamp: number;
-        muteSettings: any;
-        isCanonicalUser: boolean;
-        isCanonical: boolean;
-        canonicalFbid: string;
-        isSubscribed: boolean;
-        rootMessageThreadingID: string;
-        folder: string;
-        isArchived: boolean;
-        recipientsLoadable: boolean;
-        hasEmailParticipant: boolean;
-        readOnly: boolean;
-        canReply: boolean;
-        composerEnabled: boolean;
-        blockedParticipants: Array<string>;
-        lastMessageID: string;
-        emoji?: string;
-        color?: string;
-        lastReadTimestamp: number;
-    }
-
-    interface IReceived
-    {
-        type: 'message' | 'event' | 'typ' | 'read_receipt' | 'read' | 'message_reaction' | 'presence';
-    }
-
-    interface IReceivedMessage extends IReceived
-    {
-        type: 'message';
-
-        threadID: string;
-        senderID: string;
-        messageID: string;
-
-        isGroup: boolean;
-        args: string[];
-        body: string;
-        command: string;
-        attachments: IAttachment[];
-        participantIDs: string[];
-    }
-
-    interface IReceivedEvent extends IReceived
-    {
-        type: 'event';
-        logMessageType: 
-        'log:subscribe' | 
-        'log:unsubscribe' | 
-        'log:thread-name' | 
-        'log:thread-color' | 
-        'log:thread-icon' | 
-        'log:user-nickname' |
-        'log:thread-admins' | 
-        'log:thread-approval-mode' | 
-        'log:thread-call' |
-        'log:thread-poll';
-
-        logMessageData: string;
-        logMessageBody: string;
-        author: string;
-        threadID: string;
-        participantIDs: string[];
-    }
-
-    interface IReceivedTyp extends IReceived
-    {
-        type: 'typ';
-        isTyping: boolean;
-        from: string;
-        threadID: string;
-        fromMobile: boolean;
-    }
-
-    interface IReceivedReadReceipt extends IReceived
-    {
-        type: 'read_receipt';
-        reader: string;
-        time: number;
-        threadID: string;
-    }
-
-    interface IReceivedRead extends IReceived
-    {
-        type: 'read';
-        threadID: string;
-        time: number;
-    }
-
-    interface IReceivedMessageReaction extends IReceived
-    {
-        type: 'message_reaction';
-        reaction: string;
-        threadID: string;
-        userID: string;
-        senderID: string;
-        messageID: string;
-        offlineThreadingID?: string;
-        timestamp: number;
-    }
-
-    interface IReceivedPresence extends IReceived
-    {
-        type: 'presence';
-        timestamp: number;
-        userID: string;
-        statuses: 0 | 2 | number;
-    }
-
-    interface IAttachment {
-        /** type of attachment */
-        type: 'sticker' | 'file' | 'photo' | 'animated_image' | 'share' | 'video';
-    }
-
-    interface IStickerAttachment extends IAttachment {
-        /** sticker */
-        type: 'sticker';
-        url: string;
-        stickerID: string;
-    }
-
-    interface IFileAttachment extends IAttachment {
-        /** file */
-        type: 'file';
-        name: string;
-        url: string;
-        ID: string;
-    }
-
-    interface IPhotoAttachment extends IAttachment {
-        /** photo */
-        type: 'photo';
-        ID: string;
-        url?: string;
-    }
-
-    interface IAnimatedImageAttachment extends IAttachment
-    {
-        type: 'animated_image';
-        name: string;
-        ID: string | '';
-        url?: string;
-    }
-
-    interface IVideoAttachment extends IAttachment {
-        type: 'video';
-        ID: string;
-        url: string;
-    }
-
-    interface IShareAttachment extends IAttachment {
-        type: 'share';
-        ID: string;
-        url?: string;
-    }
-
-    interface IShareSubAttachment {
-        description: string;
-        media: {
-            animated_image: string,
-            animated_image_size: { height: number, width: number },
-            image: string,
-            image_size: { height: number, width: number },
-            duration: number,
-            playable: boolean,
-            source: string,
-        },
-        source: string;
-        style_list: string[];
-        title: string;
-        properties: any;
-        uri: string;
-        forwadable: boolean;
-        subattachments: IShareSubAttachment[];
-        deduplication_key: string;
-        action_links: string[];
-        messaging_attribution: {
-            attribution_type: string,
-            attribution_id: string,
-            name: string,
-            icon_url: string
+    | {
+      type: "event";
+      author: string;
+      logMessageBody: string;
+      logMessageData: {
+        image: {
+          attachmentID: string;
+          width: number;
+          height: number;
+          url: string;
         };
-        messenger_ctas: string[];
-        target: {
-            video_id: string;
-        } | any;
+      };
+      logMessageType: "log:thread-image";
+      threadID: string;
     }
-
-    export interface IThreadHistoryMessage
-    {
-        type: 'message';
-        senderName: string;
-        senderID: string;
-        participantNames: string[];
-        participantIDs: string[];
-        args?: string[];
+    | {
+      type: "event";
+      author: string;
+      logMessageBody: string;
+      logMessageData: {
+        addedParticipants: {
+          fanoutPolicy: string;
+          firstName: string;
+          fullName: string;
+          groupJoinStatus: string;
+          initialFolder: string;
+          initialFolderId: {
+            systemFolderId: string;
+          };
+          lastUnsubscribeTimestampMs: string;
+          userFbId: string;
+          isMessengerUser: boolean;
+        }[];
+      };
+      logMessageType: "log:subscribe";
+      threadID: string;
+      participantIDs: string[];
+    }
+    | {
+      type: "event";
+      author: string;
+      logMessageBody: string;
+      logMessageData: { leftParticipantFbId: string };
+      logMessageType: "log:unsubscribe";
+      threadID: string;
+      participantIDs: string[];
+    }
+    | {
+      type: "event";
+      author: string;
+      logMessageBody: string;
+      logMessageData: { name: string };
+      logMessageType: "log:thread-name";
+      threadID: string;
+      participantIDs: string[];
+    }
+    | {
+      type: "event";
+      author: string;
+      logMessageBody: string;
+      logMessageData: {
+        theme_color: string;
+        gradient?: string;
+        should_show_icon: string;
+        theme_id: string;
+        accessibility_label: string;
+        theme_name_with_subtitle: string;
+        theme_emoji?: string;
+      };
+      logMessageType: "log:thread-color";
+      threadID: string;
+      participantIDs: string[];
+    }
+    | {
+      type: "event";
+      author: string;
+      logMessageBody: string;
+      logMessageData: {
+        thread_quick_reaction_instruction_key_id: string;
+        thread_quick_reaction_emoji: string;
+        thread_quick_reaction_emoji_url: string;
+      };
+      logMessageType: "log:thread-icon";
+      threadID: string;
+      participantIDs: string[];
+    }
+    | {
+      type: "event";
+      author: string;
+      logMessageBody: string;
+      logMessageData: {
+        nickname: string;
+        participant_id: string;
+      };
+      logMessageType: "log:user-nickname";
+      threadID: string;
+      participantIDs: string[];
+    }
+    | {
+      type: "event";
+      author: string;
+      logMessageBody: string;
+      logMessageData: {
+        THREAD_CATEGORY: string;
+        TARGET_ID: string;
+        ADMIN_TYPE: string;
+        ADMIN_EVENT: 'add_admin' | 'remove_admin';
+      };
+      logMessageType: "log:thread-admins";
+      threadID: string;
+      participantIDs: string[];
+    }
+    | {
+      type: "event";
+      author: string;
+      logMessageBody: string;
+      logMessageData: {
+        removed_option_ids: string;
+        question_json: string;
+        event_type: 'question_creation' | 'update_vote' | 'add_unvoted_option' | 'multiple_updates';
+        added_option_ids: string;
+        new_option_texts: string;
+        new_option_ids: string;
+        question_id: string;
+      };
+      logMessageType: "log:thread-poll";
+      threadID: string;
+      participantIDs: string[];
+    }
+    | {
+      type: "event";
+      author: string;
+      logMessageBody: string;
+      logMessageData: { APPROVAL_MODE: '0' | '1'; THREAD_CATEGORY: string };
+      logMessageType: "log:thread-approval-mode";
+      threadID: string;
+      participantIDs: string[];
+    }
+    | {
+      type: "event";
+      author: string;
+      logMessageBody: string;
+      logMessageData: any;
+      logMessageType: "log:thread-call";
+      threadID: string;
+      participantIDs: string[];
+    }
+    | {
+      type: "typ";
+      from: string;
+      fromMobile: boolean;
+      isTyping: boolean;
+      threadID: string;
+    }
+    | {
+      type: "read";
+      threadID: string;
+      time: number;
+    }
+    | {
+      type: "read_receipt";
+      reader: string;
+      threadID: string;
+      time: number;
+    }
+    | {
+      type: "message_reaction";
+      threadID: string;
+      messageID: string;
+      reaction: string;
+      senderID: string;
+      userID: string;
+      reactionTimestamp: number;
+    }
+    | {
+      type: "presence";
+      statuses: number;
+      timestamp: number;
+      userID: string;
+    }
+    | {
+      type: "message_unsend";
+      threadID: string;
+      senderID: string;
+      messageID: string;
+      deletionTimestamp: number;
+    }
+    | {
+      type: "message_reply";
+      attachments: IFCAU_Attachment[];
+      args: string[];
+      body: string;
+      isGroup: boolean;
+      mentions: { [id: string]: string };
+      messageID: string;
+      senderID: string;
+      threadID: string;
+      isUnread: boolean;
+      participantIDs: string[];
+      messageReply: {
+        attachments: IFCAU_Attachment[];
         body: string;
-        command: string;
-        threadID: string;
-        threadName: string;
-        location: any;
-        messageID: string;
-        attachments: IAttachment[];
-        timestamp: number;
-        timestampAbsolute?: number;
-        timestampRelative?: number;
-        timestampDatetime?: number;
-        tags: string[];
-        reactions: IDictionary<string>;
         isGroup: boolean;
+        mentions: { [id: string]: string };
+        messageID: string;
+        senderID: string;
+        threadID: string;
+        isUnread: boolean;
+      };
+    };
+
+  // ============================================================================
+  // Attachment Types
+  // ============================================================================
+
+  export type IFCAU_Attachment =
+    | {
+      type: "sticker";
+      ID: string;
+      url: string;
+      packID: string;
+      spriteUrl: string;
+      spriteUrl2x: string;
+      width: number;
+      height: number;
+      caption: string;
+      description: string;
+      frameCount: number;
+      frameRate: number;
+      framesPerRow: number;
+      framesPerCol: number;
     }
-
-    export interface IDictionary<TValue>
-    {
-        [key: string]: TValue;
+    | {
+      type: "file";
+      ID: string;
+      filename: string;
+      url: string;
+      isMalicious: boolean;
+      contentType: string;
     }
-
-    export class API
-    {
-        /**
-         * adds a user or array of users to a group chat
-         * @param userID user id or array of users ids
-         * @param threadID group chat id
-         * @param callback a callback called when the query is done
-         */
-        public addUserToGroup(userID: string | Array<string>, threadID: string, callback?: (err: Facebook.IError) => void): void;
-
-        /**
-         * set the archive status of the `threads` to `archive`
-         * @param threads the id or array of ids to set archive status
-         * @param archive the new arhive status
-         * @param callback callback called when the query is done
-         */
-        public changeArchivedStatus(threadOrThreads: string | Array<string>, archive: boolean, callback: (err: Facebook.IError) => void): void;
-
-        /**
-         * prevents a user from privately contacting you
-         * @param userID user id
-         * @param block whether to block or unblock the user
-         * @param callback callback called when the query is done
-         */
-        public changeBlockedStatus(userID: string, block: boolean, callback?: (err: Facebook.IError) => void): void;
-
-        /**
-         * change the group chat's image to the given image
-         * @param image file stream of image
-         * @param threadID string representing the id of the thread
-         * @param callback callback called when the change is done
-         */
-        public changeGroupImage(image: ReadableStream, threadID: string, callback?: (err: Facebook.IError) => void): void;
-
-        /**
-         * change the thread user nickname to the one provided
-         * @param nickname nickname, leave empty to reset nickname
-         * @param threadID thread id
-         * @param participantID user id
-         * @param callback callback called when the change is done
-         */
-        public changeNickname(nickname: string, threadID: string, participantID: string, callback?: (err: Facebook.IError) => void): void;
-
-        /**
-         * change the thread color to the given hex string color, leave empty to reset to default
-         * @param color hex color code
-         * @param threadID thread id
-         * @param callback callback called when the change is done
-         */
-        public changeThreadColor(color: string, threadID: string, callback?: (err: Facebook.IError) => void): void;
-
-        /**
-         * change the thread emoji to the one provided
-         * @param emoji string containing a single emoji character
-         * @param threadID thread id
-         * @param callback callback called when the change is done
-         */
-        public changeThreadEmoji(emoji: string, threadID: string, callback?: (err: Facebook.IError) => void): void;
-
-        /**
-         * create a poll with the specified title and optional poll options
-         * @param title title for the poll
-         * @param threadID thread id
-         * @param options optional string:bool dictionary to specify initial poll options and their states
-         * @param callback callback called when the poll is posted
-         */
-        public createPoll(title: string, threadID: string, options: any, callback?: (err: Facebook.IError) => void): void;
-
-        /**
-         * create a poll with the specified title and optional poll options
-         * @param title title for the poll
-         * @param threadID thread id
-         * @param callback callback called when the poll is posted
-         */
-        public createPoll(title: string, threadID: string, callback?: (err: Facebook.IError) => void): void;
-
-        /**
-         * deletes message or array of messages specified by their ids
-         * @param messageOrMessages message id or array of ids
-         * @param callback callback called when the query is done
-         */
-        public deleteMessage(messageOrMessages: string | Array<string>, callback?: (err: Facebook.IError) => void): void;
-
-        /**
-         * delete thread or threads from yuor account, this **does not** remove the messages from Facebook's servers
-         * @param threadOrThreads thread id(s) you wish to remove from yuor account
-         * @param callback callback called when the operation is done
-         */
-        public deleteThread(threadOrThreads: string | Array<string>, callback?: (err: Facebook.IError) => void): void;
-
-        /**
-         * forwards corresponding attachment to given user id or to every user from array of user ids
-         * @param attachmentID id of attachment object, not all attachments have IDs: recorded audio and arbitrary files don't
-         * @param user user id to forward attachment to
-         * @param callback callback called when the query is done
-         */
-        public forwardAttachment(attachmentID: string, user: string, callback?: (err: Facebook.IError) => void): void;
-
-        /**
-         * forwards corresponding attachment to given user id or to every user from array of user ids
-         * @param attachmentID id of attachment object, not all attachments have IDs: recorded audio and arbitrary files don't
-         * @param users user ids to forward attachment to
-         * @param callback callback called when the query is done
-         */
-        public forwardAttachment(attachmentID: string, users: string[], callback?: (err: Facebook.IError) => void): void;
-
-
-        /** returns current `appState` which can be saved to a file or stored in a variable */
-        public getAppState(): any;
-
-        /** returns the currently logged-in user's id */
-        public getCurrentUserID(): string;
-
-        /**
-         * returns an array of objects with some information about your friends
-         * @param callback callback called when the query is done
-         */
-        public getFriendsList(callback?: (err: Facebook.IError, arr: Array<Facebook.IUser>) => void): void;
-
-        /**
-         * get `amount` of messages from `threadID` starting from messages posted at `timestamp`
-         * @param threadID thread is
-         * @param amount amount of messages to request
-         * @param timestamp used to descride the time of the most recent message to load
-         * @param callback callback called when the query is done, if error is null, history will contain an array of message objects
-         */
-        public getThreadHistory(threadID: string, amount: number, timestamp: number, callback?: (err: Facebook.IError, history: Array<Facebook.IThreadHistoryMessage>) => void);
-
-        /**
-         * returns information about thread
-         * @param threadID id of thread
-         * @param callback if `err` is null, `info` will contain information about thread
-         */
-        public getThreadInfo(threadID: string, callback: (err: Facebook.IError, info: Facebook.IThreadInfo) => void): void;
-
-        /**
-         * returns information about threads
-         * @param start start index in the list of recently used threads
-         * @param end end index
-         * @param type thread types
-         * @param callback callback called when the query is done, either with an error or with an confirmation object
-         */
-        public getThreadList(start: number, end: number, type: 'inbox' | 'pending' | 'archived', callback: (err: Facebook.IError, arr: Array<Facebook.IThreadInfo>) => void): void;
-
-        /**
-         * returns pictures sent in the thread
-         * @param threadID thread id
-         * @param offset start index of picture to retrieve, where 0 is the most recent picture
-         * @param limit number of pictures to get, incrementing from the offset index
-         * @param callback callback called when the query is done, either with an error or with an confirmation object
-         */
-        public getThreadPictures(threadID: string, offset: number, limit: number, callback: (err: Facebook.IError, arr: Array<{ url: string, width: number, height: number }>) => void): void;
-
-        /**
-         * given the full name or vanity name of a Facebook user, event, page, group or app, the call will perform a Facebook Graph search and return all corresponding IDs
-         * @param name the full name or vanity name of a Facebook user, event, page, group or app
-         * @param callback called when the search is done
-         */
-        public getUserID(name: string, callback: (err: Facebook.IError, obj: Array<{ userID: string, photoUrl: string, indexRank: number, name: string, isVerified: boolean, profileUrl: string, category: string, score: number, type: 'user' | 'group' | 'page' | 'event' | 'app' }>) => void): void;
-
-        /**
-         * returns some information about the given users
-         * @param ids user ids
-         * @param callback callback called when the query is done
-         */
-        public getUserInfo(ids: string, callback: (err: Facebook.IError, obj: Facebook.IDictionary<IUserInfo>) => void): void;
-
-        /**
-         * returns some information about the given users
-         * @param ids user id
-         * @param callback callback called when the query is done
-         */
-        public getUserInfo(ids: string[], callback: (err: Facebook.IError, obj: Facebook.IDictionary<IUserInfo>) => void): void;
-
-        /**
-         * accept or ignore message request(s) with id `threadID`
-         * @param threadID a threadID or array of threadIDs corresponding to the target thread(s)
-         * @param accept the new status to assign to the message request(s), true for inbox, false otherwise
-         * @param callback callback called when the query is done
-         */
-        public handleMessageRequest(threadID: string | Array<string>, accept: boolean, callback: (err: Facebook.IError) => void): void;
-
-        /**
-         * calls `callback` when a new message is received, by default this won't receive events but it can be activated with `api.setOptions`.
-         * @returns stopListening that will stop the listen loop and is guaranteed to prevent any future calls to the callback given to listen.
-         * @param callback callback called every time message/event is received
-         */
-        public listen(callback: (error: Facebook.IError, event: Facebook.IReceived) => void): () => void;
-
-        /**
-         * Same as api.listen but uses MQTT to recieve data.
-         *
-         * Will call callback when a new message is received on this account. By default this won't receive events (joining/leaving a chat, title change etc...) but it can be activated with api.setOptions({listenEvents: true}). This will by default ignore messages sent by the current account, you can enable listening to your own messages with api.setOptions({selfListen: true}). This returns stopListening that will stop the listen loop and is guaranteed to prevent any future calls to the callback given to listenMqtt. An immediate call to stopListening when an error occurs will prevent the listen function to continue.
-         * @returns stopListening that will stop the listen loop and is guaranteed to prevent any future calls to the callback given to listen.
-         * @param callback a callback called every time the logged-in account receives a new message
-         */
-        public listenMqtt(callback: (error: Facebook.IError, event: Facebook.IReceived) => void): () => void;
-
-        /**
-         * logs out the current user
-         * @param callback callback called when the query is done
-         */
-        public logout(callback?: (err: Facebook.IError) => void): void;
-
-        /**
-         * marks all unread messages as read in thread
-         * @param threadID id of the thread
-         * @param callback callback called when the operation is done
-         */
-        public markAsRead(threadID: string, callback?: (err: Facebook.IError) => void): void;
-
-        /**
-         * mute a chat for a period of time (or unmute)
-         * @param threadID thread id
-         * @param muteSeconds mute the chat for this amout of seconds, use `0` to unmute a chat or `-1` to mute indefinitely
-         * @param callback callback called when the operation is done
-         */
-        public muteThread(threadID: string, muteSeconds: number, callback?: (err: Facebook.IError) => void): void;
-
-        /**
-         * removes a user from a group chat
-         * @param userID user id
-         * @param threadID thread id
-         * @param callback callback called when the query is done
-         */
-        public removeUserFromGroup(userID: string, threadID: string, callback?: (err: Facebook.IError) => void): void;
-
-        /**
-         * resolves the url to the full-size photo
-         * @param photoID photo id
-         * @param callback callback called when the query is done
-         */
-        public resolvePhotoUrl(photoID: string, callback: (err: Facebook.IError, url: string) => void): void;
-
-        /**
-         * sends the given message to the thread
-         * @param message a string or a message object
-         * @param threadID thread id(s)
-         * @param callback callback called when sending the message is done
-         * @param messageID messageID of the message being replied to
-         */
-        public sendMessage(message: string | Facebook.IMessage, threadID: string | Array<string>, callback?: (err: Facebook.IError, messageInfo: Facebook.IMessageInfo) => void, messageID?: string): void;
-
-        /**
-         * 
-         * @param threadID thread id
-         * @param callback callback called when the query is done
-         * @returns `end` function that removes the *user is typing* indicator
-         */
-        public sendTypingIndicator(threadID: string, callback?: (err: Facebook.IError) => void): () => void;
-
-        /**
-         * sets reaction on message
-         * @param reaction a string containing either an emoji, an emoji in unicode or an emoji shortcut
-         * @param messageID message id
-         * @param callback callback called when sending the reaction is done
-         */
-        public setMessageReaction(reaction: ':love:' | ':haha:' | ':wow:' | ':sad:' | ':angry:' | ':like:' | ':dislike:' | '', messageID: string, callback?: (err: Facebook.IError) => void): void;
-
-        /**
-         * sets various configurable options for the api
-         * @param options an object containing the new values for the options that you want to set
-         */
-        public setOptions(options: Facebook.IOptions): void;
-
-        /**
-         * sets the title of the group chat with `threadID` to `newTitle`,
-         * this will not work if the thread id corresponds to a single user chat 
-         * or if the bot is not in the group chat
-         * @param newTitle new title
-         * @param threadID thread id
-         * @param callback callback called when sending the message is done, either with an error or with an confirmation object
-         */
-        public setTitle(newTitle: string, threadID: string, callback?: (err: Facebook.IError, obj: { threadID: string }) => void): void;
+    | {
+      type: "photo";
+      ID: string;
+      filename: string;
+      thumbnailUrl: string;
+      previewUrl: string;
+      previewWidth: number;
+      previewHeight: number;
+      largePreviewUrl: string;
+      largePreviewWidth: number;
+      largePreviewHeight: number;
+      url: string;
+      width: number;
+      height: number;
     }
-}
+    | {
+      type: "animated_image";
+      ID: string;
+      filename: string;
+      previewUrl: string;
+      previewWidth: number;
+      previewHeight: number;
+      url: string;
+      width: number;
+      height: number;
+    }
+    | {
+      type: "video";
+      ID: string;
+      filename: string;
+      previewUrl: string;
+      previewWidth: number;
+      previewHeight: number;
+      url: string;
+      width: number;
+      height: number;
+      duration: number;
+      videoType: string;
+    }
+    | {
+      type: "audio";
+      ID: string;
+      filename: string;
+      audioType: string;
+      duration: number;
+      url: string;
+      isVoiceMail: boolean;
+    }
+    | {
+      type: "location";
+      ID: string;
+      latitude: number;
+      longitude: number;
+      image: string;
+      width: number;
+      height: number;
+      url: string;
+      address: string;
+    }
+    | {
+      type: "share";
+      ID: string;
+      url: string;
+      title: string;
+      description: string;
+      source: string;
+      image: string;
+      width: number;
+      height: number;
+      playable: boolean;
+      duration: number;
+      playableUrl: string;
+      subattachments: any;
+      properties: any;
+    };
 
-declare module "index.js"
-{
-    /**
-     * allows the user to log into facebook given the right credentials,
-     * if it succeeds, `callback` will be called with a `null` object and `api` object,
-     * if it fails, `callback` will be called with an error object
-     * @param credentials credentials used to log into facebook
-     * @param callback callback that will be called after (successfull or not) login
-     */
-    function login(credentials: Facebook.ICredentials | Facebook.IAppStateCredentials, callback: (err: Facebook.ILoginError, api: Facebook.API) => void): void;
+  // ============================================================================
+  // User Types
+  // ============================================================================
 
-    /**
-     * allows the user to log into facebook given the right credentials,
-     * if it succeeds, `callback` will be called with a `null` object and `api` object,
-     * if it fails, `callback` will be called with an error object
-     * @param credentials credentials used to log into facebook
-     * @param callback callback that will be called after (successfull or not) login
-     */
-    function login(credentials: Facebook.ICredentials | Facebook.IAppStateCredentials, options: Facebook.IOptions, callback: (err: Facebook.ILoginError, api: Facebook.API) => void): void;
+  export type IFCAU_User = {
+    name: string;
+    firstName?: string;
+    vanity?: string;
+    thumbSrc: string;
+    profileUrl: string | null;
+    gender?: number;
+    type: string;
+    isFriend?: boolean;
+    isBirthday: boolean;
+    searchToken: any;
+    alternateName?: string;
+  };
 
-    export = login;
+  export type IFCAU_UserIDResponse = {
+    userID: string;
+    photoUrl: string;
+    indexRank: number;
+    name: string;
+    isVerified: boolean;
+    profileUrl: string;
+    category: string;
+    score: number;
+    type: string;
+  }[];
+
+  export type IFCAU_Friend = {
+    alternativeName: string;
+    firstName: string;
+    gender: string;
+    userID: string;
+    isFriend: boolean;
+    fullName: string;
+    profilePicture: string;
+    type: string;
+    profileUrl: string;
+    vanity: string;
+    isBirthday: boolean;
+  };
+
+  // ============================================================================
+  // Thread Types
+  // ============================================================================
+
+  export type IFCAU_Thread = {
+    threadID: string;
+    participantIDs: string[];
+    threadName: string;
+    userInfo: (IFCAU_User & { id: string })[];
+    nicknames: { [id: string]: string } | null;
+    unreadCount: number;
+    messageCount: number;
+    imageSrc: string;
+    timestamp: number;
+    muteUntil: number | null;
+    isGroup: boolean;
+    isSubscribed: boolean;
+    folder: 'INBOX' | 'ARCHIVE' | string;
+    isArchived: boolean;
+    cannotReplyReason: string | null;
+    lastReadTimestamp: number;
+    emoji: string | null;
+    color: string | null;
+    adminIDs: string[];
+    approvalMode: boolean;
+    approvalQueue: { inviterID: string; requesterID: string; timestamp: string }[];
+  };
+
+  export type IFCAU_ThreadList = {
+    threadID: string;
+    name: string;
+    unreadCount: number;
+    messageCount: number;
+    imageSrc: string;
+    emoji: string | null;
+    color: string | null;
+    nicknames: { userid: string; nickname: string }[];
+    muteUntil: number | null;
+    participants: IFCAU_ThreadList_Participants[];
+    adminIDs: string[];
+    folder: "INBOX" | "ARCHIVED" | "PENNDING" | "OTHER" | string;
+    isGroup: boolean;
+    customizationEnabled: boolean;
+    participantAddMode: string;
+    reactionMuteMode: string;
+    isArchived: boolean;
+    isSubscribed: boolean;
+    timestamp: number;
+    snippet: string;
+    snippetAttachments: string;
+    snippetSender: string;
+    lastMessageTimestamp: number;
+    listReadTimestamp: number | null;
+    cannotReplyReason: string | null;
+    approvalMode: string;
+  }[];
+
+  export type IFCAU_ThreadList_Participants =
+    | {
+      accountType: "User";
+      userID: string;
+      name: string;
+      shortName: string;
+      gender: string;
+      url: string;
+      profilePicture: string;
+      username: string | null;
+      isViewerFriend: boolean;
+      isMessengerUser: boolean;
+      isVerified: boolean;
+      isMessageBlockedByViewer: boolean;
+      isViewerCoworker: boolean;
+    }
+    | {
+      accountType: "Page";
+      userID: string;
+      name: string;
+      url: string;
+      profilePicture: string;
+      username: string | null;
+      acceptMessengerUserFeedback: boolean;
+      isMessengerUser: boolean;
+      isVerified: boolean;
+      isMessengerPlatformBot: boolean;
+      isMessageBlockedByViewer: boolean;
+    }
+    | {
+      accountType: "ReducedMessagingActor";
+      userID: string;
+      name: string;
+      url: string;
+      profilePicture: string;
+      username: string | null;
+      acceptMessengerUserFeedback: boolean;
+      isMessageBlockedByViewer: boolean;
+    }
+    | {
+      accountType: "UnavailableMessagingActor";
+      userID: string;
+      name: string;
+      url: null;
+      profilePicture: string;
+      username: null;
+      acceptMessengerUserFeedback: boolean;
+      isMessageBlockedByViewer: boolean;
+    }
+    | {
+      accountType: string;
+      userID: string;
+      name: string;
+    };
+
+  // ============================================================================
+  // Middleware Types
+  // ============================================================================
+
+  export type IFCAU_Middleware = (event: IFCAU_ListenMessage, next: (err?: Error | false | null) => void) => void | Promise<void> | false | null;
+
+  // ============================================================================
+  // Scheduler Types
+  // ============================================================================
+
+  export type IFCAU_ScheduledMessage = {
+    id: string;
+    message: string | MessageObject;
+    threadID: string | string[];
+    timestamp: number;
+    createdAt: number;
+    options: {
+      replyMessageID?: string;
+      isGroup?: boolean;
+      callback?: (err?: Error) => void;
+    };
+    timeUntilSend: number;
+  };
+
+  // ============================================================================
+  // Options Type
+  // ============================================================================
+
+  export type IFCAU_Options = {
+    pauseLog: boolean;
+    logLevel: "silly" | "verbose" | "info" | "http" | "warn" | "error" | "silent";
+    selfListen: boolean;
+    listenEvents: boolean;
+    pageID: string;
+    updatePresence: boolean;
+    forceLogin: boolean;
+    userAgent: string;
+    autoMarkDelivery: boolean;
+    autoMarkRead: boolean;
+    proxy: string;
+    online: boolean;
+  };
 }
