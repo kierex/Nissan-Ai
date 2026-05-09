@@ -2,56 +2,37 @@ module.exports = {
   config: {
     name: "rob",
     aliases: ["steal", "heist"],
-    description: "Try to rob another user",
-    usage: "rob @mention",
-    cooldown: 30,
-    category: "economy"
+    version: "1.0",
+    author: "CowBot",
+    countDown: 7200,
+    role: 0,
+    shortDescription: "Try to rob another user",
+    description: { en: "Attempt to rob coins from another user (risky!)" },
+    category: "economy",
+    guide: { en: "{pn}rob @mention" }
   },
-  run: async ({ api, event, db, config }) => {
-    const uid = event.senderID;
-    const user = db.getUser(uid);
-    if (!user.registered) return api.sendMessage(`❌ Register first! ${config.prefix}register <name>`, event.threadID);
-
-    const mentioned = event.mentions && Object.keys(event.mentions);
-    if (!mentioned || !mentioned.length) return api.sendMessage(`🦹 Usage: ${config.prefix}rob @user`, event.threadID);
-
-    const targetUID = mentioned[0];
-    if (targetUID === uid) return api.sendMessage("❌ You can't rob yourself!", event.threadID);
-
-    const target = db.getUser(targetUID);
-    if (!target.registered) return api.sendMessage("❌ Target is not registered!", event.threadID);
-
-    const targetEco = db.getBalance(targetUID);
-    const myEco = db.getBalance(uid);
-
-    if (targetEco.balance < 100) return api.sendMessage("💸 Target is too poor to rob!", event.threadID);
-    if (myEco.balance < 200) return api.sendMessage("❌ You need at least 200 coins to attempt a rob!", event.threadID);
-
+  onStart: async function ({ message, event, usersData }) {
+    const mentions = Object.keys(event.mentions || {});
+    if (!mentions.length) return message.reply("❌ Mention someone to rob!\nUsage: !rob @someone");
+    const target = mentions[0];
+    if (target === event.senderID) return message.reply("❌ You can't rob yourself!");
     const success = Math.random() < 0.45;
-    if (success) {
-      const stolen = Math.floor(targetEco.balance * (Math.random() * 0.2 + 0.05));
-      db.updateBalance(uid, stolen);
-      db.updateBalance(targetUID, -stolen);
-      db.addExp(uid, 10);
-      return api.sendMessage(
-        `🦹 ROB SUCCESS!\n` +
-        `━━━━━━━━━━━━━━━\n` +
-        `🎯 Target: ${target.name}\n` +
-        `💰 Stolen: ${config.currency}${stolen.toLocaleString()}\n` +
-        `💵 Balance: ${config.currency}${db.getBalance(uid).balance.toLocaleString()}`,
-        event.threadID
-      );
-    } else {
-      const fine = Math.floor(myEco.balance * 0.1);
-      db.updateBalance(uid, -fine);
-      return api.sendMessage(
-        `🚔 CAUGHT!\n` +
-        `━━━━━━━━━━━━━\n` +
-        `You were caught robbing ${target.name}!\n` +
-        `💸 Fine: ${config.currency}${fine.toLocaleString()}\n` +
-        `💵 Balance: ${config.currency}${db.getBalance(uid).balance.toLocaleString()}`,
-        event.threadID
-      );
+    if (!success) {
+      message.reply("🚔 ROB FAILED!\n━━━━━━━━━━━━━\nYou got caught! Cops fined you 200 coins!\n\n😅 Better luck next time!");
+      try { const u = await usersData.get(event.senderID); await usersData.set(event.senderID, { money: Math.max(0, (u.money||0) - 200) }); } catch(e) {}
+      return;
+    }
+    const stolen = Math.floor(Math.random() * 400) + 100;
+    try {
+      const robber = await usersData.get(event.senderID);
+      const victim = await usersData.get(target);
+      const canSteal = Math.min(stolen, victim.money || 0);
+      if (canSteal === 0) return message.reply("❌ Target has no coins to steal!");
+      await usersData.set(event.senderID, { money: (robber.money || 0) + canSteal });
+      await usersData.set(target, { money: Math.max(0, (victim.money || 0) - canSteal) });
+      message.reply(`🦹 ROB SUCCESS!\n━━━━━━━━━━━━━\nYou stole ${canSteal} coins!\n\n⚠️ Cooldown: 2 hours`);
+    } catch(e) {
+      message.reply("❌ Error processing robbery.");
     }
   }
 };
