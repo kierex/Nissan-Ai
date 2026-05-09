@@ -1,15 +1,16 @@
 services:
   - type: web
-    name: nar-bot
+    name: cow-bot
     env: node
-    region: oregon
+    region: singapore
     plan: free
-    buildCommand: npm install --production=false
+    buildCommand: npm install --no-audit --no-fund
     startCommand: node index.js
-    healthCheckPath: /ping
-    autoDeploy: true
     envVars:
-      - key: NODE_ENV
-        value: production
       - key: NODE_VERSION
         value: "20.18.0"
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "5000"
+    autoDeploy: true
