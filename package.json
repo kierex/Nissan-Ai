@@ -1,0 +1,42 @@
+{
+  "name": "nissan-bot",
+  "version": "1.0.0",
+  "description": "NAV BOT — GoatBot-inspired Facebook Messenger bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "postinstall": "npm rebuild better-sqlite3 --build-from-source || true"
+  },
+  "dependencies": {
+    "fca-unofficial": "file:./fca",
+    "better-sqlite3": "^9.6.0",
+    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "chalk": "4.1.2",
+    "moment": "^2.30.1",
+    "node-cron": "^3.0.3",
+    "figlet": "^1.7.0",
+    "gradient-string": "^2.0.2",
+    "dotenv": "^16.4.5",
+    "bluebird": "^3.7.2",
+    "cheerio": "^1.0.0-rc.12",
+    "mqtt": "^4.3.7",
+    "npmlog": "^4.1.2",
+    "request": "^2.88.2",
+    "websocket-stream": "^5.5.0",
+    "https-proxy-agent": "^4.0.0"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "keywords": [
+    "facebook",
+    "messenger",
+    "bot",
+    "chatbot",
+    "fca"
+  ],
+  "author": "NAV BOT",
+  "license": "MIT"
+}
