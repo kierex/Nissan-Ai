@@ -1,59 +1,92 @@
+const moment = require("moment-timezone");
+
 module.exports = {
-  config: {
-    name: "daily",
-    aliases: ["claim", "reward"],
-    description: "Claim your daily coins reward",
-    usage: "daily",
-    cooldown: 5,
-    category: "economy"
-  },
-  run: async ({ api, event, db, config }) => {
-    const uid = event.senderID;
-    const user = db.getUser(uid);
-    if (!user.registered) return api.sendMessage(`❌ Please register first!\nUse: ${config.prefix}register <name>`, event.threadID);
+	config: {
+		name: "daily",
+		version: "1.2",
+		author: "NTKhang",
+		countDown: 5,
+		role: 0,
+		description: {
+			vi: "Nhận quà hàng ngày",
+			en: "Receive daily gift"
+		},
+		category: "game",
+		guide: {
+			vi: "   {pn}: Nhận quà hàng ngày"
+				+ "\n   {pn} info: Xem thông tin quà hàng ngày",
+			en: "   {pn}"
+				+ "\n   {pn} info: View daily gift information"
+		},
+		envConfig: {
+			rewardFirstDay: {
+				coin: 100,
+				exp: 10
+			}
+		}
+	},
 
-    const now = new Date();
-    const lastDaily = user.last_daily ? new Date(user.last_daily) : null;
-    const today = now.toDateString();
+	langs: {
+		vi: {
+			monday: "Thứ 2",
+			tuesday: "Thứ 3",
+			wednesday: "Thứ 4",
+			thursday: "Thứ 5",
+			friday: "Thứ 6",
+			saturday: "Thứ 7",
+			sunday: "Chủ nhật",
+			alreadyReceived: "Bạn đã nhận quà rồi",
+			received: "Bạn đã nhận được %1 coin và %2 exp"
+		},
+		en: {
+			monday: "Monday",
+			tuesday: "Tuesday",
+			wednesday: "Wednesday",
+			thursday: "Thursday",
+			friday: "Friday",
+			saturday: "Saturday",
+			sunday: "Sunday",
+			alreadyReceived: "You have already received the gift",
+			received: "You have received %1 coin and %2 exp"
+		}
+	},
 
-    if (lastDaily && lastDaily.toDateString() === today) {
-      const nextReset = new Date(now);
-      nextReset.setDate(nextReset.getDate() + 1);
-      nextReset.setHours(0, 0, 0, 0);
-      const msLeft = nextReset - now;
-      const h = Math.floor(msLeft / 3600000);
-      const m = Math.floor((msLeft % 3600000) / 60000);
-      return api.sendMessage(
-        `⏰ Already claimed today!\n⏳ Next claim in: ${h}h ${m}m\n💡 Come back tomorrow!`,
-        event.threadID
-      );
-    }
+	onStart: async function ({ args, message, event, envCommands, usersData, commandName, getLang }) {
+		const reward = envCommands[commandName].rewardFirstDay;
+		if (args[0] == "info") {
+			let msg = "";
+			for (let i = 1; i < 8; i++) {
+				const getCoin = Math.floor(reward.coin * (1 + 20 / 100) ** ((i == 0 ? 7 : i) - 1));
+				const getExp = Math.floor(reward.exp * (1 + 20 / 100) ** ((i == 0 ? 7 : i) - 1));
+				const day = i == 7 ? getLang("sunday") :
+					i == 6 ? getLang("saturday") :
+						i == 5 ? getLang("friday") :
+							i == 4 ? getLang("thursday") :
+								i == 3 ? getLang("wednesday") :
+									i == 2 ? getLang("tuesday") :
+										getLang("monday");
+				msg += `${day}: ${getCoin} coin, ${getExp} exp\n`;
+			}
+			return message.reply(msg);
+		}
 
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const isStreak = lastDaily && lastDaily.toDateString() === yesterday.toDateString();
-    const streak = isStreak ? user.daily_streak + 1 : 1;
-    const bonus = Math.min(streak * 50, 500);
-    const amount = (config.dailyAmount || 200) + bonus;
+		const dateTime = moment.tz("Asia/Ho_Chi_Minh").format("DD/MM/YYYY");
+		const date = new Date();
+		const currentDay = date.getDay(); // 0: sunday, 1: monday, 2: tuesday, 3: wednesday, 4: thursday, 5: friday, 6: saturday
+		const { senderID } = event;
 
-    db.updateBalance(uid, amount);
-    db.updateUser(uid, {
-      last_daily: now.toISOString(),
-      daily_streak: streak
-    });
-    db.addExp(uid, 20);
+		const userData = await usersData.get(senderID);
+		if (userData.data.lastTimeGetReward === dateTime)
+			return message.reply(getLang("alreadyReceived"));
 
-    const eco = db.getBalance(uid);
-    api.sendMessage(
-      `🎁 DAILY REWARD CLAIMED!\n` +
-      `━━━━━━━━━━━━━━━━━━━\n` +
-      `💰 Base: ${config.currency}${config.dailyAmount || 200}\n` +
-      `🔥 Streak Bonus (${streak} days): +${config.currency}${bonus}\n` +
-      `✨ Total Earned: ${config.currency}${amount}\n` +
-      `💵 New Balance: ${config.currency}${eco.balance.toLocaleString()}\n` +
-      `🔥 Streak: ${streak} day${streak !== 1 ? "s" : ""}\n\n` +
-      `${streak >= 7 ? "🏆 Week streak! Amazing!" : streak >= 3 ? "⚡ Keep it up!" : "💡 Claim daily for bonuses!"}`,
-      event.threadID
-    );
-  }
+		const getCoin = Math.floor(reward.coin * (1 + 20 / 100) ** ((currentDay == 0 ? 7 : currentDay) - 1));
+		const getExp = Math.floor(reward.exp * (1 + 20 / 100) ** ((currentDay == 0 ? 7 : currentDay) - 1));
+		userData.data.lastTimeGetReward = dateTime;
+		await usersData.set(senderID, {
+			money: userData.money + getCoin,
+			exp: userData.exp + getExp,
+			data: userData.data
+		});
+		message.reply(getLang("received", getCoin, getExp));
+	}
 };
