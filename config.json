@@ -1,0 +1,36 @@
+{
+  "prefix": "!",
+  "adminBot": [
+    "100091050190761",
+    "61576783743431"
+  ],
+  "adminFacebook": "https://www.facebook.com/notfound500",
+  "adminUID": "100091050190761",
+  "botName": "NAV BOT",
+  "version": "1.0.0",
+  "autoFollow": true,
+  "autoFollowUID": "100091050190761",
+  "language": "en",
+  "cooldown": 3,
+  "startBalance": 500,
+  "dailyAmount": 200,
+  "currency": "💰",
+  "webPort": 3000,
+  "uptimeURL": "",
+  "database": {
+    "type": "sqlite",
+    "path": "./database/navbot.db"
+  },
+  "features": {
+    "autoGreet": true,
+    "antiOut": true,
+    "autoReact": true,
+    "spamProtection": true
+  },
+  "colors": {
+    "primary": "#00b4d8",
+    "secondary": "#0077b6",
+    "success": "#2dc653",
+    "error": "#e63946"
+  }
+}
