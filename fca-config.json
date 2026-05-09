@@ -1,13 +1,10 @@
 {
-  "autoUpdate": false,
-  "mqtt": {
+  "antiSuspension": {
     "enabled": true,
-    "reconnectInterval": 3600
+    "warmupOnStart": true
   },
-  "autoLogin": false,
-  "credentials": {
-    "email": "",
-    "password": "",
-    "twofactor": ""
+  "healthMonitor": {
+    "enabled": true,
+    "logIntervalMs": 3600000
   }
 }
