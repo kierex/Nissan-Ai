@@ -1,0 +1,15 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "node index.js"
+restartPolicyType = "always"
+restartPolicyMaxRetries = 10
+
+[[services]]
+name = "cow-bot"
+
+[services.variables]
+NODE_ENV = "production"
+NODE_VERSION = "20"
+PORT = "5000"
